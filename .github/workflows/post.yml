@@ -1,0 +1,43 @@
+name: 하루 6번 카드뉴스 게시
+
+# 일본 시간(JST) 기준 07:30·12:00·15:00·18:00·20:00·22:30 대략적인 배치 —
+# GitHub Actions 스케줄은 부하가 몰리면 몇 분 늦게 뜰 수 있다(공식 문서에 명시된 동작).
+# 정시에 정확히 맞춰야 할 이유가 없는 광고라 문제 삼지 않는다.
+on:
+  schedule:
+    - cron: '30 22 * * *' # 07:30 JST
+    - cron: '0 3 * * *'   # 12:00 JST
+    - cron: '0 6 * * *'   # 15:00 JST
+    - cron: '0 9 * * *'   # 18:00 JST
+    - cron: '0 11 * * *'  # 20:00 JST
+    - cron: '30 13 * * *' # 22:30 JST
+  workflow_dispatch: {} # 수동으로도 돌려볼 수 있게
+
+permissions:
+  contents: write # queue/ → posted/ 이동을 커밋·푸시하려면 필요
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - name: 큐의 다음 항목 게시
+        env:
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+        run: npm run post
+
+      - name: queue → posted 이동을 커밋
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "chore: 게시 완료 항목을 posted/ 로 이동"
+          git push

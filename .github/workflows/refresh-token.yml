@@ -1,0 +1,44 @@
+name: 액세스 토큰 45일마다 갱신
+
+# 장기 토큰 수명이 60일이라 45일마다 미리 갱신한다(여유를 둔다).
+# GH_PAT 시크릿(레포 시크릿을 고칠 권한이 있는 개인 액세스 토큰)이 있어야
+# `gh secret set` 이 된다 — 기본 GITHUB_TOKEN 은 시크릿을 못 고친다.
+# 이 시크릿이 없으면 이 워크플로는 새 토큰을 로그에만 남기고 실패한다 —
+# 그때는 README 대로 사람이 한 번 수동으로 옮겨야 한다.
+on:
+  schedule:
+    - cron: '0 0 1,16 * *' # 매달 1일·16일 자정(UTC) — 대략 보름마다
+  workflow_dispatch: {}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - name: 새 토큰 발급
+        id: refresh
+        env:
+          META_APP_ID: ${{ secrets.META_APP_ID }}
+          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+        run: |
+          NEW_TOKEN=$(npm run -s refresh-token)
+          echo "::add-mask::$NEW_TOKEN"
+          echo "token=$NEW_TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: 새 토큰을 시크릿에 반영
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "GH_PAT 시크릿이 없어서 자동 반영을 못 한다 — README 대로 수동으로 IG_ACCESS_TOKEN 을 갱신해라"
+            exit 1
+          fi
+          gh secret set IG_ACCESS_TOKEN --body "${{ steps.refresh.outputs.token }}"
