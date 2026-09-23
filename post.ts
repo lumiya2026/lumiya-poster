@@ -2,7 +2,7 @@
  * 큐의 가장 오래된 항목 하나를 인스타그램에 올린다
  *   npx tsx post.ts
  *
- * GitHub Actions 워크플로(.github/workflows/post.yml)가 하루 6번 이 스크립트를 부른다.
+ * GitHub Actions 워크플로(.github/workflows/post.yml)가 하루 3번 이 스크립트를 부른다.
  * 실패하면(네트워크·API 오류) 큐에 그대로 남겨둔다 — 다음 스케줄이 같은 항목을 다시 시도한다.
  * 성공한 뒤에만 queue/ 에서 posted/ 로 옮긴다(옮기고 나서 커밋하는 건 워크플로가 한다) —
  * README "왜 저장소를 public 으로 두는가" 참조: 이미지가 실제로 인스타그램에 올라간

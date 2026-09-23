@@ -1,6 +1,6 @@
 # lumiya-poster
 
-kantsuna(かんつな) 카드뉴스를 인스타그램에 하루 6번 자동 게시하는 저장소.
+kantsuna(かんつな) 카드뉴스를 인스타그램에 하루 3번 자동 게시하는 저장소.
 원본 소스·데이터(03_KDK)와 **분리**되어 있다 — 여기 올라오는 건 완성된 광고
 이미지·캡션뿐이다. 전체 배경은 03_KDK 저장소의 `docs/cardnews-rules.md` 참조.
 
@@ -59,7 +59,7 @@ git push -u origin main
 | `META_APP_SECRET` | Meta 개발자 앱의 App Secret | 위와 같음 |
 | `GH_PAT` | repo 시크릿을 고칠 수 있는 개인 액세스 토큰 | 토큰 자동 갱신 쓸 거면 필요, 없어도 게시 자체는 된다 |
 
-`GH_PAT`이 없어도 하루 6번 게시는 정상 작동한다 — 다만 60일마다 `IG_ACCESS_TOKEN`을
+`GH_PAT`이 없어도 하루 3번 게시는 정상 작동한다 — 다만 60일마다 `IG_ACCESS_TOKEN`을
 **수동으로** 다시 받아 넣어야 한다(`refresh-token.yml`이 실패 로그에 새 토큰 값을
 남기니 그걸 복사해도 되고, 2번 단계를 다시 밟아도 된다).
 
@@ -70,7 +70,7 @@ git push -u origin main
   generate.ts 실행                       queue/2026-09-24-slot1-chain/
     → 이미지+캡션 생성                        01.png … caption.txt
     → 여기 queue/ 에 복사 + git push  ───▶
-                                        (스케줄) post.yml 이 6번 돈다
+                                        (스케줄) post.yml 이 3번 돈다
                                           → queue 의 가장 오래된 것 게시
                                           → 성공하면 posted/ 로 이동 + 커밋
 ```
