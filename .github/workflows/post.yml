@@ -6,12 +6,18 @@ name: 하루 3번 카드뉴스 게시
 # 직전 게시물의 도달(reach)까지 스스로 깎아먹는다(docs/cardnews-rules.md 참조).
 # GitHub Actions 스케줄은 부하가 몰리면 몇 분 늦게 뜰 수 있다(공식 문서에 명시된 동작) —
 # 정시에 정확히 맞춰야 할 이유가 없는 광고라 문제 삼지 않는다.
+# 스케줄은 **일부러 꺼 뒀다.** 카드뉴스 디자인·콘텐츠가 아직 준비 중이라,
+# 켜 두면 사람이 보지 않는 사이에 미완성 광고가 실계정(@kantsuna.lumiya)에
+# 하루 3장씩 나간다 — 한 번 나간 게시물은 API 로 못 지우고 손으로 지워야 한다.
+# 준비가 끝나면 아래 schedule 블록의 주석을 풀면 그대로 되살아난다.
+# 그때까지도 workflow_dispatch 는 남겨 둔다 — 토큰·IG_USER_ID 가 맞는지
+# 확인하려면 수동으로 한 장은 올려 봐야 하기 때문이다.
 on:
-  schedule:
-    - cron: '30 22 * * *' # 07:30 JST
-    - cron: '30 3 * * *'  # 12:30 JST
-    - cron: '30 10 * * *' # 19:30 JST
-  workflow_dispatch: {} # 수동으로도 돌려볼 수 있게
+  # schedule:
+  #   - cron: '30 22 * * *' # 07:30 JST
+  #   - cron: '30 3 * * *'  # 12:30 JST
+  #   - cron: '30 10 * * *' # 19:30 JST
+  workflow_dispatch: {} # 수동으로만 돈다
 
 permissions:
   contents: write # queue/ → posted/ 이동을 커밋·푸시하려면 필요
