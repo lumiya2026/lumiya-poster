@@ -82,9 +82,11 @@ git push -u origin main
 
 카드뉴스와 같은 구조지만 폴더·워크플로가 전부 분리돼 있다(`reel-queue/`·
 `posted-reels/`·`post-reel.yml`·`post-reel.ts`) — 하루 3번(카드뉴스) vs 하루
-1번(21:00 JST, 릴스)으로 주기가 다르기 때문이다. 큐 폴더 하나에 `*.mp4` 하나 +
-`caption.txt`가 들어간다. 시크릿·토큰은 카드뉴스와 **동일**(별도 설정 불필요) —
-`instagram_business_content_publish` 권한이 미디어 타입을 가리지 않는다.
+1번(**07:00 JST**, 카드뉴스 첫 슬롯 07:30 보다 30분 먼저 — 릴스가 그날 맨 먼저
+나가고 카드뉴스가 뒤따른다)으로 주기·순서가 다르기 때문이다. 큐 폴더 하나에
+`*.mp4` 하나 + `caption.txt`가 들어간다. 시크릿·토큰은 카드뉴스와 **동일**
+(별도 설정 불필요) — `instagram_business_content_publish` 권한이 미디어
+타입을 가리지 않는다.
 
 ## 로컬에서 테스트
 
