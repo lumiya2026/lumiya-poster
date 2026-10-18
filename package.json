@@ -6,6 +6,7 @@
   "description": "kantsuna 카드뉴스를 인스타그램에 자동 게시하는 작은 저장소 — 원본 소스(03_KDK)와 분리됨",
   "scripts": {
     "post": "tsx post.ts",
+    "post-reel": "tsx post-reel.ts",
     "refresh-token": "tsx refresh-token.ts",
     "typecheck": "tsc --noEmit"
   },

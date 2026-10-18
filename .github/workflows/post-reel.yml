@@ -1,0 +1,40 @@
+name: 하루 1번 릴스 게시
+
+# 2026-10-18 신설 — 카드뉴스(post.yml, 하루 3번)와 별도 스케줄이다. 릴스는 그날
+# ②漢字チェーン 카드뉴스와 같은 한자를 쓰지만(03_KDK generate.ts), 올리는 시각은
+# 다르다 — 19:30 JST 카드뉴스 직후에 또 올리면 같은 계정이 30분 안에 두 번
+# 노출돼 피로·자기잠식이 생긴다. 두 시간 띄운 **21:00 JST**(퇴근 후 여가
+# 시간대 — 영상 완주율이 오르는 편)로 잡았다(03_KDK docs/reels-rules.md 참조).
+on:
+  schedule:
+    - cron: '0 12 * * *' # 21:00 JST
+  workflow_dispatch: {} # 수동으로도 돈다
+
+permissions:
+  contents: write # reel-queue/ → posted-reels/ 이동을 커밋·푸시하려면 필요
+
+jobs:
+  post-reel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - name: 릴스 큐의 다음 항목 게시
+        env:
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+        run: npm run post-reel
+
+      - name: reel-queue → posted-reels 이동을 커밋
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "chore: 릴스 게시 완료 항목을 posted-reels/ 로 이동"
+          git push

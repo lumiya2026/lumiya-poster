@@ -78,6 +78,14 @@ git push -u origin main
 큐가 마르면(= `queue/`가 비면) `post.yml`은 그냥 "큐가 비어 있다"고 로그만 남기고
 넘어간다 — 03_KDK 에서 `generate.ts`를 다시 돌려 채워 넣어야 한다.
 
+### 릴스(영상) — 2026-10-18 추가, 별도 큐·별도 스케줄
+
+카드뉴스와 같은 구조지만 폴더·워크플로가 전부 분리돼 있다(`reel-queue/`·
+`posted-reels/`·`post-reel.yml`·`post-reel.ts`) — 하루 3번(카드뉴스) vs 하루
+1번(21:00 JST, 릴스)으로 주기가 다르기 때문이다. 큐 폴더 하나에 `*.mp4` 하나 +
+`caption.txt`가 들어간다. 시크릿·토큰은 카드뉴스와 **동일**(별도 설정 불필요) —
+`instagram_business_content_publish` 권한이 미디어 타입을 가리지 않는다.
+
 ## 로컬에서 테스트
 
 ```bash
