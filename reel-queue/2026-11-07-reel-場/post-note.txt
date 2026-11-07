@@ -1,0 +1,2 @@
+권장 게시 시각: 2026-11-07 07:00 JST
+sync-to-poster.ts 로 lumiya-poster/reel-queue/ 에 올리면 post-reel.yml 이 자동 게시한다.
