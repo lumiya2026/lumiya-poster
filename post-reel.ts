@@ -8,6 +8,9 @@
  * (03_KDK `scripts/social/generate.ts` 의 REEL_SUGGESTED_TIME_JST 참고 — 카드뉴스
  * 마지막 슬롯(19:30 JST) 직후에 또 올리면 같은 계정이 30분 안에 두 번 노출된다).
  *
+ * 영상은 공개 URL 이 아니라 파일 바이트를 직접 올린다(graph-api.ts 머리 주석 — URL 방식은
+ * 10-18 이후 한 번도 성공하지 못했다).
+ *
  * 실패하면(네트워크·API 오류·영상 트랜스코딩 타임아웃) 큐에 그대로 남겨둔다 —
  * 다음 스케줄이 같은 항목을 다시 시도한다. 성공한 뒤에만 reel-queue/ 에서
  * posted-reels/ 로 옮긴다(post.ts 와 같은 안전 원칙).
@@ -17,17 +20,11 @@ import { publishReel } from './graph-api';
 
 const IG_USER_ID = need('IG_USER_ID');
 const ACCESS_TOKEN = need('IG_ACCESS_TOKEN');
-const REPO = process.env.GITHUB_REPOSITORY ?? need('REPO_FALLBACK');
-const BRANCH = process.env.GITHUB_REF_NAME ?? 'main';
 
 function need(key: string): string {
   const v = process.env[key];
   if (!v) throw new Error(`환경변수 ${key} 가 없다 — README 의 시크릿 설정을 확인해라`);
   return v;
-}
-
-function rawUrl(pathInRepo: string): string {
-  return `https://raw.githubusercontent.com/${REPO}/${BRANCH}/${pathInRepo}`;
 }
 
 function nextQueueItem(): string | null {
@@ -52,12 +49,10 @@ async function main() {
   const caption = readFileSync(`${dir}/caption.txt`, 'utf8');
 
   console.log(`▶ ${item} 게시 시작 (${videoFile})`);
-  const videoUrl = rawUrl(`${dir}/${videoFile}`);
-
   const mediaId = await publishReel({
     igUserId: IG_USER_ID,
     accessToken: ACCESS_TOKEN,
-    videoUrl,
+    videoPath: `${dir}/${videoFile}`,
     caption,
   });
 
