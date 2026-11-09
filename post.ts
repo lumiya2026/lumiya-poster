@@ -65,6 +65,10 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error('✗ 게시 실패:', e instanceof Error ? e.message : e);
+  const msg = e instanceof Error ? e.message : String(e);
+  console.error('✗ 게시 실패:', msg);
+  // ::error:: 로 찍어야 Actions 의 Annotations 에 이유가 뜬다 — 안 그러면 「exit code 1」 한 줄뿐이라
+  // 로그 본문을 열어야 하고, 로그는 저장소 권한이 있어야 열린다
+  console.log(`::error title=게시 실패::${msg.replace(/\r?\n/g, ' ')}`);
   process.exit(1);
 });
