@@ -47,6 +47,14 @@ async function main() {
   const videoFile = files.find((f) => f.endsWith('.mp4'));
   if (!videoFile) throw new Error(`${dir} 에 .mp4 파일이 없다`);
   const caption = readFileSync(`${dir}/caption.txt`, 'utf8');
+  /* 표지(2026-11-12 사용자 요청 — 영상이 돌기 전에 「무슨 릴스인지」 보이게). 인스타는 표지를 **공개 URL** 로만 받는다.
+     이 저장소가 공개라 push 된 파일의 raw 주소를 넘긴다 — 큐 폴더는 게시 직전까지 main 에 있으므로 그 순간엔 열린다.
+     GITHUB_SHA 로 커밋을 박는 이유: main 은 게시 직후 posted-reels/ 로 옮겨지며 바뀐다(인스타가 늦게 받아 가도 같은 파일) */
+  const coverFile = files.find((f) => /^cover\.(jpe?g|png)$/.test(f));
+  const repo = process.env.GITHUB_REPOSITORY ?? 'lumiya2026/lumiya-poster';
+  const ref = process.env.GITHUB_SHA ?? 'main';
+  const coverUrl = coverFile ? `https://raw.githubusercontent.com/${repo}/${ref}/${encodeURI(dir)}/${coverFile}` : undefined;
+  if (coverUrl) console.log(`  표지: ${coverUrl}`);
 
   console.log(`▶ ${item} 게시 시작 (${videoFile})`);
   const mediaId = await publishReel({
@@ -54,6 +62,7 @@ async function main() {
     accessToken: ACCESS_TOKEN,
     videoPath: `${dir}/${videoFile}`,
     caption,
+    coverUrl,
   });
 
   console.log(`✓ 게시 완료 — media id ${mediaId}`);

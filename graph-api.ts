@@ -124,6 +124,8 @@ export interface PublishReelInput {
   /** 로컬 mp4 경로 — 공개 URL 이 아니라 바이트를 직접 올린다(머리 주석 참고) */
   videoPath: string;
   caption: string;
+  /** 표지 이미지의 **공개 URL** — 피드·프로필 격자에서 영상이 돌기 전에 보이는 그림(「무슨 릴스인지」). 없으면 인스타가 첫 프레임을 고른다 */
+  coverUrl?: string;
 }
 
 /** 릴스(영상) 하나를 게시한다. 성공하면 게시된 미디어 id 를 돌려준다 */
@@ -132,11 +134,13 @@ export async function publishReel({
   accessToken,
   videoPath,
   caption,
+  coverUrl,
 }: PublishReelInput): Promise<string> {
   const container = await call(`/${igUserId}/media`, {
     media_type: 'REELS',
     upload_type: 'resumable',
     caption,
+    ...(coverUrl ? { cover_url: coverUrl } : {}),
     access_token: accessToken,
   });
 
