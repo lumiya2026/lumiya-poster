@@ -16,6 +16,7 @@
  * posted-reels/ 로 옮긴다(post.ts 와 같은 안전 원칙).
  */
 import { readdirSync, readFileSync, renameSync } from 'node:fs';
+import { slotGate } from './slot-gate';
 import { publishReel } from './graph-api';
 
 const IG_USER_ID = need('IG_USER_ID');
@@ -35,7 +36,13 @@ function nextQueueItem(): string | null {
   return dirs[0] ?? null;
 }
 
+/** 게시 회차(JST) — 워크플로는 20분마다 돌고, 이 시각이 지난 회차를 slot-gate 가 하나씩 채운다 */
+const SLOTS = ['10:30', '13:30'];
+
 async function main() {
+  const gate = slotGate('reels', SLOTS);
+  console.log(`관문: ${gate.reason}`);
+  if (!gate.slot) return;
   const item = nextQueueItem();
   if (!item) {
     console.log('릴스 큐가 비어 있다 — 03_KDK 에서 generate.ts 를 돌려 채워야 한다');
@@ -69,6 +76,7 @@ async function main() {
 
   renameSync(dir, `posted-reels/${item}`);
   console.log(`✓ reel-queue/${item} → posted-reels/${item} 로 옮김`);
+  gate.markPosted();
 }
 
 main().catch((e) => {

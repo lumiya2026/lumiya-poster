@@ -9,6 +9,7 @@
  * 뒤에는 저장소에 남아 있어도 이미 세상에 공개된 것이라 문제 없다.
  */
 import { readdirSync, readFileSync, renameSync } from 'node:fs';
+import { slotGate } from './slot-gate';
 import { publishCarousel } from './graph-api';
 
 const IG_USER_ID = need('IG_USER_ID');
@@ -35,7 +36,13 @@ function nextQueueItem(): string | null {
   return dirs[0] ?? null;
 }
 
+/** 게시 회차(JST) — 워크플로는 20분마다 돌고, 이 시각이 지난 회차를 slot-gate 가 하나씩 채운다 */
+const SLOTS = ['07:30', '12:30', '19:30'];
+
 async function main() {
+  const gate = slotGate('cards', SLOTS);
+  console.log(`관문: ${gate.reason}`);
+  if (!gate.slot) return;
   const item = nextQueueItem();
   if (!item) {
     console.log('큐가 비어 있다 — 로컬에서 generate.ts 를 돌려 채워야 한다');
@@ -62,6 +69,7 @@ async function main() {
 
   renameSync(dir, `posted/${item}`);
   console.log(`✓ queue/${item} → posted/${item} 로 옮김`);
+  gate.markPosted();
 }
 
 main().catch((e) => {
