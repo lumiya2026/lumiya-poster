@@ -128,8 +128,29 @@ export interface PublishReelInput {
   coverUrl?: string;
 }
 
-/** 릴스(영상) 하나를 게시한다. 성공하면 게시된 미디어 id 를 돌려준다 */
-export async function publishReel({
+/**
+ * 릴스(영상) 하나를 게시한다. 성공하면 게시된 미디어 id 를 돌려준다.
+ *
+ * **새 컨테이너로 세 번까지 다시 해 본다**(2026-11-13). rupload 가 `400 ProcessingFailedError
+ * {"retriable":false}` 를 돌려준 같은 mp4(quiz-空 — h264 High 1080×1920 30fps · AAC 48k · moov 앞)가
+ * 몇 시간 뒤 같은 코드로 그대로 올라갔다 — 파일이 아니라 Meta 쪽 일시 오류다. retriable:false 는
+ * 「이 컨테이너로는」이라는 뜻이라 같은 컨테이너에 다시 올리지 않고 새로 만든다.
+ */
+export async function publishReel(input: PublishReelInput): Promise<string> {
+  const attempts = 3;
+  for (let i = 1; ; i++) {
+    try {
+      return await publishReelOnce(input);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (i >= attempts || (e as { noRetry?: boolean })?.noRetry) throw e;
+      console.log(`  ${i}/${attempts}번째 실패 — 60초 뒤 새 컨테이너로 다시: ${msg}`);
+      await new Promise((r) => setTimeout(r, 60_000));
+    }
+  }
+}
+
+async function publishReelOnce({
   igUserId,
   accessToken,
   videoPath,
@@ -163,10 +184,14 @@ export async function publishReel({
   // 최대 5분)을 그대로 따른다. 짧게 자주 찔러 봐야 더 빨리 끝나지 않는다.
   await waitUntilFinished(container.id, accessToken, { intervalMs: 15_000, timeoutMs: 300_000 });
 
-  const published = await call(`/${igUserId}/media_publish`, {
-    creation_id: container.id,
-    access_token: accessToken,
-  });
-
-  return published.id;
+  // 게시 단계의 실패는 다시 하지 않는다 — 응답만 잃고 실제로는 올라갔을 수 있어, 다시 하면 같은 릴스가 두 번 나간다
+  try {
+    const published = await call(`/${igUserId}/media_publish`, {
+      creation_id: container.id,
+      access_token: accessToken,
+    });
+    return published.id;
+  } catch (e) {
+    throw Object.assign(e instanceof Error ? e : new Error(String(e)), { noRetry: true });
+  }
 }

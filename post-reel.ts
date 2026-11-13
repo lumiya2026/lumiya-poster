@@ -2,8 +2,8 @@
  * 릴스 큐의 가장 오래된 항목 하나를 인스타그램에 올린다
  *   npx tsx post-reel.ts
  *
- * GitHub Actions 워크플로(.github/workflows/post-reel.yml)가 하루 한 번(21:00 JST)
- * 이 스크립트를 부른다 — post.ts(카드뉴스, 하루 3번)와는 **별도 큐·별도 스케줄**이다.
+ * GitHub Actions 워크플로(.github/workflows/post-reel.yml)가 20분마다 부르고, 하루 두 회차(10:30·13:30 JST)를
+ * slot-gate 가 채운다 — post.ts(카드뉴스, 하루 3번)와는 **별도 큐·별도 스케줄**이다.
  * 합치지 않은 이유: 릴스는 카드뉴스와 같은 한자를 쓰지만 권장 게시 시각이 다르다
  * (03_KDK `scripts/social/generate.ts` 의 REEL_SUGGESTED_TIME_JST 참고 — 카드뉴스
  * 마지막 슬롯(19:30 JST) 직후에 또 올리면 같은 계정이 30분 안에 두 번 노출된다).
@@ -40,7 +40,9 @@ function nextQueueItem(): string | null {
 const SLOTS = ['10:30', '13:30'];
 
 async function main() {
-  const gate = slotGate('reels', SLOTS);
+  // 릴스는 놓친 회차를 따라잡는다 — 업로드 일시 오류로 10:30 이 밀리면 하루 한 편이 되던 것(slot-gate 의 catchUp 주석).
+  // 두 편 사이는 최소 2시간 띄운다 — 붙여 올리면 앞 편의 도달을 뒤 편이 깎는다
+  const gate = slotGate('reels', SLOTS, new Date(), { catchUp: true, minGapMin: 120 });
   console.log(`관문: ${gate.reason}`);
   if (!gate.slot) return;
   const item = nextQueueItem();

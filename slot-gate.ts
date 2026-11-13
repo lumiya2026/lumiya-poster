@@ -16,7 +16,8 @@
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 
-type Log = Record<string, 'posted' | 'skipped'>;
+/** 'posted@HH:MM' 은 올린 시각(JST)까지 적은 것 — 따라잡기 간격을 재려고 2026-11-13 부터 적는다. 옛 'posted' 도 그대로 읽힌다 */
+type Log = Record<string, string>;
 
 /** JST 의 날짜(YYYY-MM-DD)와 분(0~1439) */
 function jstNow(now = new Date()): { date: string; minutes: number } {
@@ -24,6 +25,7 @@ function jstNow(now = new Date()): { date: string; minutes: number } {
   return { date: j.toISOString().slice(0, 10), minutes: j.getUTCHours() * 60 + j.getUTCMinutes() };
 }
 
+const hhmm = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 const toMin = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
 
 export interface Gate {
@@ -34,7 +36,18 @@ export interface Gate {
   markPosted: () => void;
 }
 
-export function slotGate(kind: 'cards' | 'reels', slots: string[], now = new Date()): Gate {
+export interface GateOptions {
+  /**
+   * 놓친 이른 회차를 **하나씩** 따라잡는다(릴스, 2026-11-13). 릴스 업로드가 Meta 쪽 일시 오류
+   * (ProcessingFailedError)로 10:30~13:30 내내 실패하면, 13:30 이 지나는 순간 10:30 이 skipped 로 적혀
+   * 하루 두 편이 한 편이 됐다(11-12·11-13 연속). 도배 방지는 아래 minGapMin 이 맡는다.
+   */
+  catchUp?: boolean;
+  /** 따라잡을 때 오늘 마지막 게시에서 최소 이만큼(분) 띄운다 */
+  minGapMin?: number;
+}
+
+export function slotGate(kind: 'cards' | 'reels', slots: string[], now = new Date(), opts: GateOptions = {}): Gate {
   const file = `${kind}-slots.json`;
   const log: Log = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {};
   const { date, minutes } = jstNow(now);
@@ -50,13 +63,35 @@ export function slotGate(kind: 'cards' | 'reels', slots: string[], now = new Dat
       const k = `${date} ${s}`;
       if (k !== key && !log[k]) log[k] = 'skipped';
     }
-    log[key] = 'posted';
+    log[key] = `posted@${hhmm(minutes)}`;
     save();
   };
 
   if (process.env.GITHUB_EVENT_NAME === 'workflow_dispatch') {
-    const key = `${date} manual-${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+    const key = `${date} manual-${hhmm(minutes)}`;
     return { slot: key, reason: '수동 실행 — 관문을 건너뛴다', markPosted: markFor(key) };
+  }
+  if (opts.catchUp) {
+    const open = due.find((s) => !log[`${date} ${s}`]);
+    if (!open) {
+      return { slot: null, reason: due.length ? `오늘(${date}) 지난 회차는 모두 처리` : `오늘(${date}) 첫 회차(${slots[0]} JST) 전`, markPosted: () => {} };
+    }
+    // 오늘 마지막 게시 시각 — 'posted@HH:MM' 만 시각을 안다(옛 'posted' 는 간격 계산에서 빠진다)
+    const lastPosted = Object.entries(log)
+      .filter(([k, v]) => k.startsWith(date) && v.startsWith('posted@'))
+      .map(([, v]) => toMin(v.slice(7)))
+      .sort((a, b) => a - b)
+      .at(-1);
+    const gap = opts.minGapMin ?? 0;
+    if (lastPosted !== undefined && minutes - lastPosted < gap) {
+      return { slot: null, reason: `${date} ${open} 회차가 비었지만 마지막 게시(${hhmm(lastPosted)}) 뒤 ${gap}분이 안 됐다`, markPosted: () => {} };
+    }
+    const key = `${date} ${open}`;
+    const markOne = () => {
+      log[key] = `posted@${hhmm(minutes)}`;
+      save();
+    };
+    return { slot: key, reason: `${key} JST 회차가 비어 있다 — 올린다`, markPosted: markOne };
   }
   const latest = due.at(-1);
   if (!latest) return { slot: null, reason: `오늘(${date}) 첫 회차(${slots[0]} JST) 전`, markPosted: () => {} };
