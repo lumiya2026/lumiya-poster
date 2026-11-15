@@ -106,3 +106,15 @@ IG_USER_ID=... IG_ACCESS_TOKEN=... REPO_FALLBACK=owner/lumiya-poster npm run pos
 실제 Meta API를 호출하므로 큐에 진짜로 올려도 되는 항목이 있을 때만 돌린다.
 GitHub Actions 쪽은 저장소의 "Actions" 탭에서 `workflow_dispatch`로 수동 실행해
 먼저 확인해보는 걸 추천한다(스케줄을 기다리지 않아도 됨).
+
+## 게시 시각을 깨우는 Cloudflare cron(`tick/`, 2026-11-15)
+
+GitHub 의 예약 실행(`schedule`)은 20분마다로 적어 둬도 실제로는 하루 2~3번만 떴다(11-12~15 실행 기록). 그래서
+Cloudflare Worker `lumiya-poster-tick` 이 20분마다 `repository_dispatch`(tick) 신호를 보내 두 워크플로를 깨운다.
+올릴지 말지는 그대로 `slot-gate.ts` 가 정한다. `schedule` 은 예비로 남아 있다.
+
+- 비용: 하루 48회 요청 1건씩 — Durable Object·DB 를 쓰지 않아 무료 플랜 한도와 무관하다.
+- 처음 한 번(사람): GitHub → Settings → Developer settings → Fine-grained tokens → 저장소 `lumiya-poster` 하나,
+  권한 **Contents: Read and write** 만 → 값을 `../.env.cloudflare` 에 `POSTER_GITHUB_TOKEN=` 으로.
+- 배포: `printf %s "$POSTER_GITHUB_TOKEN" | npx wrangler secret put GITHUB_TOKEN -c tick/wrangler.jsonc` → `npx wrangler deploy -c tick/wrangler.jsonc`
+  (wrangler 는 형제 `../candle/node_modules` 것을 써도 된다).
